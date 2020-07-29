@@ -1,0 +1,11 @@
+{
+  "name": "GCal-Activity-Spreadsheet-Using-GAS",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "ko-kamenashi",
+  "license": "MIT",
+  "dependencies": {
+    "@google/clasp": "^2.3.0",
+    "@types/google-apps-script": "^1.0.14"
+  }
+}
