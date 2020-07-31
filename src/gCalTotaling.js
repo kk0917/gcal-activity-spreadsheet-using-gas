@@ -27,7 +27,7 @@ const calendarsId = [
   ZERO_DAC_EVENTS_ID
 ];
 
-var today = {
+const today = {
   // TODO: update read-only
   day: new Date(),
   getDay: function() {
@@ -35,120 +35,155 @@ var today = {
   }
 };
 
-  function getTodaySchedules() {
-    try {
-      let calendars = getCalendars(calendarsId);
-      let events    = getEventsExceptAllDay(calendars)
+const SSHEET_NAME = 'gcal-daily-activity-spreadsheet-' + today.getDay().getFullYear() + today.getDay().getMonth();
+const ROOT_FOLDER_ID   = '***';
 
-      writeSpreadSheet(events);
-    } catch (error) {
-      Logger.log(error);
-    }
+function getTodaySchedules() {
+  try {
+    let folder    = getTargetFolder();
+    let sSheet    = getTargetFile(folder);
+    let calendars = getCalendars(calendarsId);
+    let events    = getEventsExceptAllDay(calendars)
+
+    writeSpreadSheet(sSheet, events);
+  } catch (error) {
+    Logger.log(error);
   }
+}
 
-  function getCalendars(calendarsId) {
-    var calendars = [];
+function getTargetFolder() {
+  let rootFolder = DriveApp.getFolderById(ROOT_FOLDER_ID);
+  let yearFolder = rootFolder.getFoldersByName(today.getDay().getFullYear().toString());
 
-    calendarsId.map(function(id) {
-      calendars.push(CalendarApp.getCalendarById(id));
+  if (yearFolder.hasNext()) {
+    return yearFolder.next();
+
+  } else {
+    var newFolder = DriveApp.createFolder(today.getDay().getFullYear().toString());
+    newFolder.moveTo(rootFolder);
+
+    return newFolder;
+  }
+}
+
+function getTargetFile(folder) {
+  let _sSheet = folder.getFilesByName(SSHEET_NAME);
+  if (_sSheet.hasNext()) {
+    return _sSheet.next();
+
+  } else {
+    let sSheet = SpreadsheetApp.create(SSHEET_NAME);
+    let sSId   = sSheet.getId();
+    let file    = DriveApp.getFileById(sSId);
+
+    file.makeCopy(SSHEET_NAME, folder);
+    file.setTrashed(true);
+
+    return sSheet;
+  }
+}
+
+function getCalendars(calendarsId) {
+  var calendars = [];
+
+  calendarsId.map(function(id) {
+    calendars.push(CalendarApp.getCalendarById(id));
+  });
+
+  return calendars;
+}
+
+function getEventsExceptAllDay(calendars) {
+  var events = [];
+
+  calendars.map(function(cal) {
+    let _today      = today.getDay();
+    let todayEvents = cal.getEventsForDay(_today);
+
+    todayEvents.map(function(event) {
+      var bool = exceptAllDayEvents(event);
+
+      if (bool) events.push(event);
     });
+  });
 
-    return calendars;
+  return events;
+}
+
+function exceptAllDayEvents(event) {
+  let startTime     = event.getStartTime().toTimeString().slice(0, 8);
+  let endTime       = event.getEndTime().toTimeString().slice(0, 8);
+  let isNotAllEvent = (startTime != '00:00:00' && endTime != '00:00:00') ? true : false;
+
+  return isNotAllEvent;
+}
+
+function writeSpreadSheet(sSheet, events) {
+  let sheet = insertSheetForToday(sSheet);
+
+  if (sheet) {
+    writeEventInfoToSheet(sSheet, events);
   }
+};
 
-  function getEventsExceptAllDay(calendars) {
-    var events = [];
+function insertSheetForToday(sSheet) {
+  let _today = today.getDay();
+  let dayStr = _today.getDate().toString();
 
-    calendars.map(function(cal) {
-      let _today      = today.getDay();
-      let todayEvents = cal.getEventsForDay(_today);
-
-      todayEvents.map(function(event) {
-        var bool = exceptAllDayEvents(event);
-
-        if (bool) events.push(event);
-      });
-    });
-
-    return events;
+  if (!sSheet.getSheetByName(dayStr)) {
+    return file.insertSheet(dayStr, file.getNumSheets());
   }
+}
 
-  function exceptAllDayEvents(event) {
-    let startTime     = event.getStartTime().toTimeString().slice(0, 8);
-    let endTime       = event.getEndTime().toTimeString().slice(0, 8);
-    let isNotAllEvent = (startTime != '00:00:00' && endTime != '00:00:00') ? true : false;
+function writeEventInfoToSheet(sheet, events) {
+  events.map(function(event, i) {
+    var calendar  = CalendarApp.getCalendarById(event.getOriginalCalendarId());
+    var calName   = calendar != null ? calendar.getName() : 'event@DAC';
+    var eventName = event.getTitle() != '' ? event.getTitle() : '予定あり';
+    var startTime = event.getStartTime().toTimeString().slice(0, 8);
+    var endTime   = event.getEndTime().toTimeString().slice(0, 8);
+    var totalTime = getActivityTime(event, events);
 
-    return isNotAllEvent;
-  }
+    sheet.getRange(i + 1, 1).setValue(calName);
+    sheet.getRange(i + 1, 2).setValue(eventName);
+    sheet.getRange(i + 1, 3).setValue(startTime);
+    sheet.getRange(i + 1, 4).setValue(endTime);
+    sheet.getRange(i + 1, 5).setValue(totalTime);
+  });
+}
 
-  function writeSpreadSheet(events) {
-    let file   = SpreadsheetApp.getActiveSpreadsheet();
-    let sheet = insertSheetForToday(file);
+function getActivityTime(event, events) {
+  var hours        = event.getEndTime().getHours() - event.getStartTime().getHours();
+  var minutes      = event.getEndTime().getMinutes() - event.getStartTime().getMinutes();
+  [hours, minutes] = calcTotalTime(hours, minutes);
 
-    if (sheet) {
-      writeEventInfoToSheet(sheet, events);
+  events.map(function(_event) {
+    if (event.getId() != _event.getId() && event.getStartTime() <= _event.getStartTime() && event.getEndTime() >= _event.getEndTime()) {
+      var _hours         = _event.getEndTime().getHours() - _event.getStartTime().getHours();
+      var _minutes       = _event.getEndTime().getMinutes() - _event.getStartTime().getMinutes();
+      [_hours, _minutes] = calcTotalTime(_hours, _minutes);
+
+      hours   -= _hours;
+      minutes -= _minutes;
+
+      [hours, minutes] = calcTotalTime(hours, minutes);
     }
-  };
+  });
 
-  function insertSheetForToday(file) {
-    let sheets = file.getSheets();
-    let _today = today.getDay();
-    let dayStr = _today.getDate().toString();
+  return hours + ':' + minutes + ':00';
 
-    if (!file.getSheetByName(dayStr)) {
-      return file.insertSheet(dayStr, file.getNumSheets());
+  function calcTotalTime(hours, minutes) {
+    if (minutes < 0) {
+      --hours;
+      minutes = 60 + minutes;
     }
+
+    return [hours, minutes];
   }
+}
 
-  function writeEventInfoToSheet(sheet, events) {
-    events.map(function(event, i) {
-      var calendar  = CalendarApp.getCalendarById(event.getOriginalCalendarId());
-      var calName   = calendar != null ? calendar.getName() : 'event@DAC';
-      var eventName = event.getTitle() != '' ? event.getTitle() : '予定あり';
-      var startTime = event.getStartTime().toTimeString().slice(0, 8);
-      var endTime   = event.getEndTime().toTimeString().slice(0, 8);
-      var totalTime = getActivityTime(event, events);
-
-      sheet.getRange(i + 1, 1).setValue(calName);
-      sheet.getRange(i + 1, 2).setValue(eventName);
-      sheet.getRange(i + 1, 3).setValue(startTime);
-      sheet.getRange(i + 1, 4).setValue(endTime);
-      sheet.getRange(i + 1, 5).setValue(totalTime);
-    });
-  }
-
-  function getActivityTime(event, events) {
-    var hours        = event.getEndTime().getHours() - event.getStartTime().getHours();
-    var minutes      = event.getEndTime().getMinutes() - event.getStartTime().getMinutes();
-    [hours, minutes] = calcTotalTime(hours, minutes);
-
-    events.map(function(_event) {
-      if (event.getId() != _event.getId() && event.getStartTime() <= _event.getStartTime() && event.getEndTime() >= _event.getEndTime()) {
-        var _hours         = _event.getEndTime().getHours() - _event.getStartTime().getHours();
-        var _minutes       = _event.getEndTime().getMinutes() - _event.getStartTime().getMinutes();
-        [_hours, _minutes] = calcTotalTime(_hours, _minutes);
-
-        hours   -= _hours;
-        minutes -= _minutes;
-
-        [hours, minutes] = calcTotalTime(hours, minutes);
-      }
-    });
-
-    return hours + ':' + minutes + ':00';
-
-    function calcTotalTime(hours, minutes) {
-      if (minutes < 0) {
-        --hours;
-        minutes = 60 + minutes;
-      }
-
-      return [hours, minutes];
-    }
-  }
-
-  // TODO: make mv column function if there isn't the existing same like function
-  function moveColumnToRight() {
-    
-  }
+// TODO: make mv column function if there isn't the existing same like function
+function moveColumnToRight() {
+  
+}
 // })();
