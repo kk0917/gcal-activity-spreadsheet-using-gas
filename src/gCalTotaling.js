@@ -29,23 +29,27 @@ const calendarsId = [
 
 const today = {
   // TODO: update read-only
-  day: new Date(),
+  day: new Date(), // Month number needs to minus 1 when you insert date string as arguments. Date.getMonth() starts 0.
   getDay: function() {
     return this.day
   }
 };
 
-const SSHEET_NAME = 'gcal-daily-activity-spreadsheet-' + today.getDay().getFullYear() + today.getDay().getMonth();
+const YEAR_STR  = today.getDay().getFullYear().toString();
+const MONTH_STR = today.getDay().getMonth().toString().length == 2 ? (today.getDay().getMonth() + 1).toString() : '0' + (today.getDay().getMonth() + 1).toString();
+const DATE_STR  = today.getDay().getDate().toString().length == 2 ? today.getDay().getDate().toString() : '0' + today.getDay().getDate().toString();
+
+const SSHEET_NAME      = 'gcal-daily-activity-spreadsheet-' + YEAR_STR + MONTH_STR;
 const ROOT_FOLDER_ID   = '***';
 
 function getTodaySchedules() {
   try {
     let folder    = getTargetFolder();
-    let sSheet    = getTargetFile(folder);
+    let file       = getTargetFile(folder);
     let calendars = getCalendars(calendarsId);
     let events    = getEventsExceptAllDay(calendars)
 
-    writeSpreadSheet(sSheet, events);
+    writeSpreadSheet(SpreadsheetApp.open(file), events); //the file needs to convert FileApp class to SpreadshetApp class
   } catch (error) {
     Logger.log(error);
   }
@@ -53,13 +57,13 @@ function getTodaySchedules() {
 
 function getTargetFolder() {
   let rootFolder = DriveApp.getFolderById(ROOT_FOLDER_ID);
-  let yearFolder = rootFolder.getFoldersByName(today.getDay().getFullYear().toString());
+  let yearFolder = rootFolder.getFoldersByName(YEAR_STR);
 
   if (yearFolder.hasNext()) {
     return yearFolder.next();
 
   } else {
-    var newFolder = DriveApp.createFolder(today.getDay().getFullYear().toString());
+    let newFolder = DriveApp.createFolder(YEAR_STR);
     newFolder.moveTo(rootFolder);
 
     return newFolder;
@@ -67,19 +71,17 @@ function getTargetFolder() {
 }
 
 function getTargetFile(folder) {
-  let _sSheet = folder.getFilesByName(SSHEET_NAME);
-  if (_sSheet.hasNext()) {
-    return _sSheet.next();
+  let file = folder.getFilesByName(SSHEET_NAME);
+  if (file.hasNext()) {
+    return file.next();
 
   } else {
     let sSheet = SpreadsheetApp.create(SSHEET_NAME);
-    let sSId   = sSheet.getId();
-    let file    = DriveApp.getFileById(sSId);
+    let file    = DriveApp.getFileById(sSheet.getId());
 
-    file.makeCopy(SSHEET_NAME, folder);
-    file.setTrashed(true);
+    file.moveTo(folder);
 
-    return sSheet;
+    return file;
   }
 }
 
@@ -121,17 +123,14 @@ function exceptAllDayEvents(event) {
 function writeSpreadSheet(sSheet, events) {
   let sheet = insertSheetForToday(sSheet);
 
-  if (sheet) {
-    writeEventInfoToSheet(sSheet, events);
+  if (sheet != null) {
+    writeEventInfoToSheet(sheet, events);
   }
 };
 
 function insertSheetForToday(sSheet) {
-  let _today = today.getDay();
-  let dayStr = _today.getDate().toString();
-
-  if (!sSheet.getSheetByName(dayStr)) {
-    return file.insertSheet(dayStr, file.getNumSheets());
+  if (sSheet.getSheetByName(DATE_STR) == null) {
+    return sSheet.insertSheet(DATE_STR, sSheet.getNumSheets());
   }
 }
 
