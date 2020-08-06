@@ -65,9 +65,9 @@ function getTodaySchedules() {
     let folder    = getTargetFolder();
     let file       = getTargetFile(folder);
     let calendars = getCalendars(calendarsId);
-    let events    = getEventsExceptAllDay(calendars)
+    let events    = getEvents(calendars);
 
-    writeSpreadSheet(SpreadsheetApp.open(file), events); //the file needs to convert FileApp class to SpreadshetApp class
+    writeSpreadSheet(SpreadsheetApp.open(file), events); //convert FileApp class to SpreadsheetApp class operating target Spreadsheet.
   } catch (error) {
     Logger.log(error);
   }
@@ -113,15 +113,17 @@ function getCalendars(calendarsId) {
   return calendars;
 }
 
-function getEventsExceptAllDay(calendars) {
+function getEvents(calendars) {
   var events = [];
 
   calendars.map(function(cal) {
     let _today      = today.getDay();
     let todayEvents = cal.getEventsForDay(_today);
 
+    // filtering out the non-target events.
     todayEvents.map(function(event) {
-      var bool = exceptAllDayEvents(event);
+      var bool = exceptAllDayEvent(event);
+      // TODO: add function to except duplicated events, and 0 time events.
 
       if (bool) events.push(event);
     });
@@ -130,12 +132,12 @@ function getEventsExceptAllDay(calendars) {
   return events;
 }
 
-function exceptAllDayEvents(event) {
+function exceptAllDayEvent(event) {
   let startTime     = event.getStartTime().toTimeString().slice(0, 8);
   let endTime       = event.getEndTime().toTimeString().slice(0, 8);
-  let isNotAllEvent = (startTime != '00:00:00' && endTime != '00:00:00') ? true : false;
+  let isNotAllDayEvent = (startTime != '00:00:00' && endTime != '00:00:00') ? true : false;
 
-  return isNotAllEvent;
+  return isNotAllDayEvent;
 }
 
 function writeSpreadSheet(sSheet, events) {
