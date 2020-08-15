@@ -1,23 +1,4 @@
 // (function() {
-  // getTodaySchedules()
-
-// how to bulk fetching to specify a period.
-// function getSchedulesTargetRange() {
-//   let from = new Date(YYYY, (M - 1), 1); // M = from 0 to 11
-//   let to   = new Date(YYYY, (M - 1), 1);
-  
-//   for(var d = from; d < to; d.setDate(d.getDate()+1)) { // end with yesterday of to Date value
-//     let YEAR_STR  = d.getFullYear().toString();
-//     let MONTH_STR = d.getMonth().toString().length == 2 ? (d.getMonth() + 1).toString() : '0' + (d.getMonth() + 1).toString();
-//     let DATE_STR  = d.getDate().toString().length == 2 ? d.getDate().toString() : '0' + d.getDate().toString();
-    
-//     let SSHEET_NAME      = 'gcal-daily-activity-spreadsheet-' + YEAR_STR + MONTH_STR;
-//     let ROOT_FOLDER_ID   = '***';
-
-//     getTodaySchedules();
-//     // include all function here using getTodaySchedules function and the reference function.
-//   }
-// }
 
 const PRIVATE_EVENTS_ID        = '***@gmail.com';                 // Private Account
 const PRIVATEWORKS_ID          = '***@group.calendar.google.com';
@@ -68,6 +49,8 @@ function getTodaySchedules() {
     let events    = getEvents(calendars);
 
     writeSpreadSheet(SpreadsheetApp.open(file), events); //convert FileApp class to SpreadsheetApp class operating target Spreadsheet.
+    // TODO: 週次、月次の集計を行う。「シート1」に出力
+    // TODO: 週次、月次データをGDPに取り込み
   } catch (error) {
     Logger.log(error);
   }
@@ -140,7 +123,7 @@ function exceptAllDayEvent(event) {
   return isNotAllDayEvent;
 }
 
-function writeSpreadSheet(sSheet, events) {
+function writeSpreadSheet(sSheet, events) { // TODO: add overwrite mode
   let sheet = insertSheetForToday(sSheet);
 
   if (sheet != null) {
@@ -155,6 +138,13 @@ function insertSheetForToday(sSheet) {
 }
 
 function writeEventInfoToSheet(sheet, events) {
+  // Write header
+  sheet.getRange(1, 1).setValue('CalendarName'); // TODO: typo
+  sheet.getRange(1, 2).setValue('eventName');
+  sheet.getRange(1, 3).setValue('startTime');
+  sheet.getRange(1, 4).setValue('endTime');
+  sheet.getRange(1, 5).setValue('totalTime');
+
   events.map(function(event, i) {
     var calendar  = CalendarApp.getCalendarById(event.getOriginalCalendarId());
     var calName   = calendar != null ? calendar.getName() : 'event@DAC';
@@ -163,11 +153,11 @@ function writeEventInfoToSheet(sheet, events) {
     var endTime   = event.getEndTime().toTimeString().slice(0, 8);
     var totalTime = getActivityTime(event, events);
 
-    sheet.getRange(i + 1, 1).setValue(calName);
-    sheet.getRange(i + 1, 2).setValue(eventName);
-    sheet.getRange(i + 1, 3).setValue(startTime);
-    sheet.getRange(i + 1, 4).setValue(endTime);
-    sheet.getRange(i + 1, 5).setValue(totalTime);
+    sheet.getRange(2 + i, 1).setValue(calName);
+    sheet.getRange(2 + i, 2).setValue(eventName);
+    sheet.getRange(2 + i, 3).setValue(startTime);
+    sheet.getRange(2 + i, 4).setValue(endTime);
+    sheet.getRange(2 + i, 5).setValue(totalTime);
   });
 }
 
