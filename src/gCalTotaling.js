@@ -1,23 +1,4 @@
 // (function() {
-  // getTodaySchedules()
-
-// how to bulk fetching to specify a period.
-// function getSchedulesTargetRange() {
-//   let from = new Date(YYYY, (M - 1), 1); // M = from 0 to 11
-//   let to   = new Date(YYYY, (M - 1), 1);
-  
-//   for(var d = from; d < to; d.setDate(d.getDate()+1)) { // end with yesterday of to Date value
-//     let YEAR_STR  = d.getFullYear().toString();
-//     let MONTH_STR = d.getMonth().toString().length == 2 ? (d.getMonth() + 1).toString() : '0' + (d.getMonth() + 1).toString();
-//     let DATE_STR  = d.getDate().toString().length == 2 ? d.getDate().toString() : '0' + d.getDate().toString();
-    
-//     let SSHEET_NAME      = 'gcal-daily-activity-spreadsheet-' + YEAR_STR + MONTH_STR;
-//     let ROOT_FOLDER_ID   = '***';
-
-//     getTodaySchedules();
-//     // include all function here using getTodaySchedules function and the reference function.
-//   }
-// }
 
 const PRIVATE_EVENTS_ID        = '***@gmail.com';                 // Private Account
 const PRIVATEWORKS_ID          = '***@group.calendar.google.com';
