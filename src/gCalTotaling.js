@@ -38,6 +38,13 @@ const YEAR_STR  = today.getDay().getFullYear().toString();
 const MONTH_STR = today.getDay().getMonth().toString().length == 2 ? (today.getDay().getMonth() + 1).toString() : '0' + (today.getDay().getMonth() + 1).toString();
 const DATE_STR  = today.getDay().getDate().toString().length == 2 ? today.getDay().getDate().toString() : '0' + today.getDay().getDate().toString();
 
+const READMINE_TICKET_ID = /\#[0-9]+/;
+const JIRA_ZERO_TASK_ID  = /ZERO\-[0-9]+/;
+const taskTypesId        = [
+  READMINE_TICKET_ID,
+  JIRA_ZERO_TASK_ID
+];
+
 const SSHEET_NAME      = 'gcal-daily-activity-spreadsheet-' + YEAR_STR + MONTH_STR;
 const ROOT_FOLDER_ID   = '***';
 
@@ -139,11 +146,12 @@ function insertSheetForToday(sSheet) {
 
 function writeEventInfoToSheet(sheet, events) {
   // Write header
-  sheet.getRange(1, 1).setValue('CalendarName'); // TODO: typo
+  sheet.getRange(1, 1).setValue('calendarName');
   sheet.getRange(1, 2).setValue('eventName');
   sheet.getRange(1, 3).setValue('startTime');
   sheet.getRange(1, 4).setValue('endTime');
   sheet.getRange(1, 5).setValue('totalTime');
+  sheet.getRange(1, 6).setValue('taskId');
 
   events.map(function(event, i) {
     var calendar  = CalendarApp.getCalendarById(event.getOriginalCalendarId());
@@ -152,13 +160,30 @@ function writeEventInfoToSheet(sheet, events) {
     var startTime = event.getStartTime().toTimeString().slice(0, 8);
     var endTime   = event.getEndTime().toTimeString().slice(0, 8);
     var totalTime = getActivityTime(event, events);
+    var taskId    = extractTaskId(eventName);
 
     sheet.getRange(2 + i, 1).setValue(calName);
     sheet.getRange(2 + i, 2).setValue(eventName);
     sheet.getRange(2 + i, 3).setValue(startTime);
     sheet.getRange(2 + i, 4).setValue(endTime);
     sheet.getRange(2 + i, 5).setValue(totalTime);
+    sheet.getRange(2 + i, 6).setValue(taskId);
   });
+
+  function extractTaskId(eventName) {
+    let taskId = '-';
+
+    taskTypesId.map(id => {
+      var result = eventName.match(id);
+
+      if (result) {
+        taskId = result;
+        return;
+      }
+    });
+  
+    return taskId;
+  }
 }
 
 function getActivityTime(event, events) {
