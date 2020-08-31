@@ -3,14 +3,16 @@
 const PRIVATE_EVENTS_ID        = '***@gmail.com';                 // Private Account
 const PRIVATEWORKS_ID          = '***@group.calendar.google.com';
 const TRAININGS_ID             = '***@group.calendar.google.com';
-const CHORES_ID                = '***@group.calendar.google.com';  // 雑務
-const ARCHITECT_AND_DEVELOP_ID = '***@group.calendar.google.com';  // 設計／開発
-const RESEARCH_AND_VERIFY_ID   = '***@group.calendar.google.com';  // 調査／検証
-const PRIVATE_THINGS_TODO_ID   = '***@group.calendar.google.com';  // 用事／移動@Private
+const CHORES_ID                = '***@group.calendar.google.com'; // 雑務
+const CHORES_ID                = '***@group.calendar.google.com'; // 雑務
+const ARCHITECT_AND_DEVELOP_ID = '***@group.calendar.google.com'; // 設計／開発
+const RESEARCH_AND_VERIFY_ID   = '***@group.calendar.google.com'; // 調査／検証
+const PRIVATE_THINGS_TODO_ID   = '***@group.calendar.google.com'; // 用事／移動@Private
+const BAND_MUSIC_ID            = '***@group.calendar.google.com'; // 演奏／作曲
 const EVENTS_BY_CONNPASS_ID    = '***@import.calendar.google.com';
-const DAC_EVENTS_ID            = '***@dac.co.jp';                  // DAC Account
-const DAC_THINGS_TODO_ID       = '***@group.calendar.google.com';  // Mtg／移動@dac
-const ZERO_DAC_EVENTS_ID       = '***@group.calendar.google.com';  // 第零@dac
+const DAC_EVENTS_ID            = '***@dac.co.jp';                 // DAC Account
+const DAC_THINGS_TODO_ID       = '***@group.calendar.google.com'; // Mtg／移動@dac
+const ZERO_DAC_EVENTS_ID       = '***@group.calendar.google.com'; // 第零@dac
 
 const calendarsId = [
   PRIVATE_EVENTS_ID,
